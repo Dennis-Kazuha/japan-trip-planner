@@ -1,685 +1,1288 @@
-
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-   <meta charset="UTF-8">
-   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <title>日本旅遊規劃與鐵路系統</title>
-   <!-- 載入 Tailwind CSS CDN -->
-   <script src="https://cdn.tailwindcss.com"></script>
-   <!-- 載入 Vue 3 CDN -->
-   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-   <!-- 載入 FontAwesome Icons -->
-   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-   <style>
-       /* 使用 Inter 字體以獲得現代 App 感 */
-       :root { font-family: 'Inter', sans-serif; }
-       /* 隱藏原生滾動條，但保留滾動功能 */
-       .no-scrollbar::-webkit-scrollbar { display: none; }
-       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-       /* LE SSERAFIM 主題色 (紅黑/白色調) */
-       .app-primary { background-color: #f7004f; } /* 類似 'Fearless' 的紅色 */
-       .app-secondary { background-color: #3f3f46; } /* Gray-700 */
-       .app-text-primary { color: #f7004f; }
-       .app-bg { background-color: #f4f4f5; } /* Zinc-100 */
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FEARLESS TRIP | 日本旅遊規劃與鐵路系統</title>
 
-       /* 模擬手機頂部狀態欄 */
-       .status-bar {
-           height: 24px;
-           background-color: #fff;
-           border-radius: 12px 12px 0 0;
-           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-       }
-   </style>
-   <script>
-       tailwind.config = {
-           theme: {
-               extend: {
-                   colors: {
-                       'primary': '#f7004f',
-                       'secondary': '#3f3f46',
-                       'background': '#f4f4f5',
-                   }
-               }
-           }
-       }
-   </script>
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Vue 3 CDN -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+  <!-- FontAwesome Icons -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter",
+        sans-serif;
+    }
+
+    /* 隱藏原生滾動條，但保留滾動功能 */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* 主題色 */
+    .app-primary {
+      background-color: #f7004f;
+    }
+    .app-secondary {
+      background: radial-gradient(circle at top, #111827 0, #020617 55%, #000 100%);
+    }
+    .app-text-primary {
+      color: #f7004f;
+    }
+    .app-bg {
+      background-color: #f4f4f5;
+    }
+
+    /* 模擬手機頂部狀態欄 */
+    .status-bar {
+      height: 22px;
+      background: linear-gradient(
+        to right,
+        rgba(15, 23, 42, 0.95),
+        rgba(15, 23, 42, 0.8)
+      );
+    }
+  </style>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#f7004f',
+            secondary: '#020617',
+            background: '#f4f4f5',
+          },
+        },
+      },
+    };
+  </script>
 </head>
-<body class="bg-background min-h-screen">
-
-<div id="app" class="max-w-md mx-auto shadow-2xl bg-white min-h-screen flex flex-col">
-   <!-- 模擬手機邊框的狀態欄 -->
-   <div class="status-bar"></div>
-
-   <!-- 封面區域 (LE SSERAFIM Logo 主題) -->
-   <div class="app-secondary text-white p-6 rounded-b-xl shadow-lg relative overflow-hidden">
-       <h1 class="text-3xl font-extrabold tracking-widest text-center mb-1">
-           FEARLESS JOURNEY
-       </h1>
-       <p class="text-sm text-center font-light tracking-wider opacity-80 mb-4">
-           日本旅遊計劃
-       </p>
-
-       <!-- 視覺元素：模仿 logo 的簡約線條設計 -->
-       <div class="flex justify-center space-x-4 text-primary text-xl">
-           <i class="fas fa-route"></i>
-           <i class="fas fa-cloud-sun"></i>
-           <i class="fas fa-wallet"></i>
-           <i class="fas fa-train"></i>
-       </div>
-   </div>
-
-   <!-- 內容區塊與 Tab 切換 -->
-   <header class="sticky top-0 z-10 bg-white p-2 border-b border-gray-200">
-       <div class="flex justify-around p-1 bg-gray-100 rounded-xl shadow-inner">
-           <button
-               v-for="tab in tabs"
-               :key="tab.id"
-               @click="currentTab = tab.id"
-               :class="{'app-primary shadow-lg text-white': currentTab === tab.id, 'text-gray-600': currentTab !== tab.id}"
-               class="flex-1 py-2 rounded-lg font-medium transition-all duration-300 flex items-center justify-center space-x-2 text-sm"
-           >
-               <i :class="tab.icon"></i>
-               <span class="hidden sm:inline">{{ tab.name }}</span>
-           </button>
-       </div>
-   </header>
-
-   <!-- 內容區域 -->
-   <main class="flex-grow p-4 overflow-y-auto no-scrollbar">
-
-       <!-- 1. 每日行程表 (Itinerary) -->
-       <div v-if="currentTab === 'itinerary'" class="space-y-6">
-           <h2 class="text-2xl font-bold app-text-primary border-b pb-2">📅 每日行程規劃</h2>
-
-           <!-- 行程新增表單 -->
-           <form @submit.prevent="addActivity" class="bg-white p-4 shadow-xl rounded-2xl border border-primary/10 space-y-3">
-               <input v-model="newActivity.time" type="time" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
-               <input v-model="newActivity.location" type="text" placeholder="地點 (如：東京鐵塔)" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary">
-               <textarea v-model="newActivity.details" placeholder="備註 (如：門票已購買)" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary resize-none" rows="2"></textarea>
-               <button type="submit" class="app-primary text-white w-full py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transition duration-200">
-                   <i class="fas fa-plus mr-2"></i> 新增活動
-               </button>
-           </form>
-
-           <!-- 行程列表 -->
-           <div v-if="sortedSchedule.length === 0" class="text-center p-8 bg-white rounded-2xl shadow-md text-gray-500">
-               <i class="far fa-calendar-alt text-4xl mb-3 app-text-primary"></i>
-               <p>無畏地新增你的行程吧！</p>
-           </div>
-
-           <div v-else class="space-y-4">
-               <div v-for="(activity, index) in sortedSchedule" :key="activity.id" class="relative pl-6">
-                   <!-- 時間線點 -->
-                   <div class="absolute left-0 top-0 w-3 h-3 app-primary rounded-full ring-4 ring-primary/30"></div>
-                   <!-- 時間線 -->
-                   <div v-if="index < dailySchedule.length - 1" class="absolute left-[5px] top-4 bottom-[-10px] w-0.5 bg-primary/50"></div>
-
-                   <div :class="{'bg-red-50/70 border-primary/40': activity.editing}" class="bg-white p-4 rounded-xl shadow-md transition-all duration-300 border border-transparent">
-                       <div v-if="!activity.editing" @click="toggleEdit(activity)" class="cursor-pointer">
-                           <p class="font-bold text-lg app-text-primary">{{ activity.time }}</p>
-                           <h3 class="font-semibold text-gray-800 text-xl">{{ activity.location }}</h3>
-                           <p v-if="activity.details" class="text-sm text-gray-600 mt-1 italic">{{ activity.details }}</p>
-                           <div class="mt-2 text-right">
-                               <button @click.stop="deleteActivity(activity.id)" class="text-red-500 hover:text-red-700 p-1 rounded transition">
-                                   <i class="fas fa-trash-alt"></i> 刪除
-                               </button>
-                               <button @click.stop="toggleEdit(activity)" class="text-secondary hover:text-secondary/80 ml-2 p-1 rounded transition">
-                                   <i class="fas fa-edit"></i> 編輯
-                               </button>
-                           </div>
-                       </div>
-                       <!-- 編輯模式 -->
-                       <div v-else class="space-y-2">
-                           <input v-model="activity.time" type="time" class="w-full p-2 border rounded-lg focus:ring-primary focus:border-primary">
-                           <input v-model="activity.location" type="text" class="w-full p-2 border rounded-lg focus:ring-primary focus:border-primary">
-                           <textarea v-model="activity.details" class="w-full p-2 border rounded-lg resize-none focus:ring-primary focus:border-primary"></textarea>
-                           <button @click="toggleEdit(activity)" class="app-primary text-white w-full py-2 rounded-lg font-medium">
-                               <i class="fas fa-check mr-2"></i> 完成編輯
-                           </button>
-                       </div>
-                   </div>
-               </div>
-           </div>
-       </div>
-
-       <!-- 2. 分帳系統 (Expenses) -->
-       <div v-else-if="currentTab === 'expenses'" class="space-y-6">
-           <h2 class="text-2xl font-bold app-text-primary border-b pb-2">💰 旅遊分帳結算</h2>
-
-           <!-- 人員管理與新增支出 -->
-           <div class="bg-white p-4 shadow-xl rounded-2xl border border-primary/10 space-y-4">
-               <h3 class="font-semibold text-lg text-gray-700 border-b pb-2">旅伴名單</h3>
-               <div class="flex flex-wrap gap-2 mb-3">
-                   <span v-for="person in people" :key="person" class="bg-secondary/10 text-secondary font-medium py-1 px-3 rounded-full flex items-center shadow-sm">
-                       {{ person }}
-                       <button @click="removePerson(person)" class="ml-2 text-sm text-secondary/70 hover:text-secondary transition">
-                           <i class="fas fa-times-circle"></i>
-                       </button>
-                   </span>
-               </div>
-               <div class="flex space-x-2">
-                   <input v-model="newPersonName" @keyup.enter="addPerson" type="text" placeholder="新增旅伴名稱" class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary">
-                   <button @click="addPerson" class="app-secondary text-white p-3 rounded-lg font-semibold shadow-md"><i class="fas fa-user-plus"></i></button>
-               </div>
-           </div>
-
-           <!-- 新增支出表單 -->
-           <form @submit.prevent="addExpense" class="bg-white p-4 shadow-xl rounded-2xl border border-primary/10 space-y-3">
-               <h3 class="font-semibold text-lg text-gray-700 border-b pb-2">記錄新支出 (JPY)</h3>
-               <input v-model.number="newExpense.amount" type="number" placeholder="金額 (JPY)" required min="1" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary">
-               <input v-model="newExpense.description" type="text" placeholder="支出項目 (如：午餐)" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary">
-               <select v-model="newExpense.paidBy" required class="w-full p-3 border border-gray-300 rounded-lg appearance-none bg-white focus:ring-primary focus:border-primary">
-                   <option value="" disabled>誰付的錢？</option>
-                   <option v-for="person in people" :key="person" :value="person">{{ person }}</option>
-               </select>
-
-               <p class="font-medium text-gray-700 mt-3">誰參與了分帳？</p>
-               <div class="flex flex-wrap gap-3">
-                   <label v-for="person in people" :key="person" class="inline-flex items-center bg-gray-100 p-2 rounded-lg shadow-inner">
-                       <input type="checkbox" :value="person" v-model="newExpense.participants" class="form-checkbox text-primary rounded focus:ring-primary">
-                       <span class="ml-2 text-gray-700 text-sm">{{ person }}</span>
-                   </label>
-               </div>
-               <button type="submit" :disabled="people.length < 2 || newExpense.participants.length === 0" class="app-primary text-white w-full py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transition duration-200 disabled:opacity-50">
-                   <i class="fas fa-credit-card mr-2"></i> 記錄支出
-               </button>
-           </form>
-
-           <!-- 結算結果 -->
-           <div class="bg-secondary text-white p-4 shadow-xl rounded-2xl">
-               <h3 class="font-bold text-xl mb-3 flex justify-between items-center border-b border-white/30 pb-2">
-                   <span>結算結果</span>
-                   <span class="text-sm font-light opacity-80">總支出: {{ totalExpenses.toLocaleString() }} JPY</span>
-               </h3>
-
-               <!-- 總結算表 -->
-               <div class="space-y-2 mb-4">
-                   <div v-for="(balance, person) in balances" :key="person" class="flex justify-between items-center bg-white/10 p-2 rounded-lg">
-                       <span class="font-medium">{{ person }}</span>
-                       <span :class="{'text-green-300': balance > 0, 'text-red-300': balance < 0, 'text-white': balance === 0}" class="font-bold">
-                           {{ balance > 0 ? '+' : '' }}{{ balance.toLocaleString() }} JPY
-                       </span>
-                   </div>
-               </div>
-
-               <!-- 最小化交易建議 -->
-               <h4 class="font-semibold text-lg border-b border-white/30 pb-2 mb-3">最小化交易建議</h4>
-               <div v-if="settlements.length === 0" class="text-center text-white/70 italic">
-                   目前無需結算。
-               </div>
-               <div v-else class="space-y-3">
-                   <div v-for="(settlement, index) in settlements" :key="index" class="bg-white/20 p-3 rounded-lg flex items-center justify-between shadow-md">
-                       <span class="font-medium">{{ settlement.from }}</span>
-                       <i class="fas fa-arrow-right mx-2 text-primary"></i>
-                       <span class="font-medium">{{ settlement.to }}</span>
-                       <span class="ml-auto font-bold text-lg text-primary bg-white px-3 py-1 rounded-full shadow-inner">
-                           {{ settlement.amount.toLocaleString() }} JPY
-                       </span>
-                   </div>
-               </div>
-           </div>
-
-           <!-- 支出歷史紀錄 -->
-           <h3 class="font-bold text-xl app-text-primary border-b pb-2 mt-6">支出歷史紀錄</h3>
-           <div v-if="expenses.length === 0" class="text-center p-8 bg-white rounded-2xl shadow-md text-gray-500">
-               <i class="fas fa-receipt text-4xl mb-3 app-text-primary"></i>
-               <p>還沒有任何支出紀錄。</p>
-           </div>
-           <div v-else class="space-y-3">
-               <div v-for="(expense, index) in expenses" :key="index" class="bg-white p-4 rounded-xl shadow-md flex justify-between items-center">
-                   <div>
-                       <p class="font-semibold text-gray-800">{{ expense.description }}</p>
-                       <p class="text-sm text-gray-500">由 <span class="font-medium text-secondary">{{ expense.paidBy }}</span> 支付</p>
-                       <p class="text-xs text-gray-400">參與者: {{ expense.participants.join(', ') }}</p>
-                   </div>
-                   <div class="text-right">
-                       <p class="font-bold text-xl app-text-primary">{{ expense.amount.toLocaleString() }} JPY</p>
-                       <button @click="deleteExpense(index)" class="text-red-500 hover:text-red-700 text-sm mt-1">
-                           <i class="fas fa-trash-alt"></i>
-                       </button>
-                   </div>
-               </div>
-           </div>
-       </div>
-
-       <!-- 3. 鐵路系統 (Railway) -->
-       <div v-else-if="currentTab === 'railway'" class="space-y-6">
-           <h2 class="text-2xl font-bold app-text-primary border-b pb-2">🚅 日本鐵路查詢 (模擬)</h2>
-
-           <div class="bg-white p-4 shadow-xl rounded-2xl border border-primary/10 space-y-3">
-               <input v-model="railwayOrigin" type="text" placeholder="起點 (如：東京站)" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary">
-               <input v-model="railwayDestination" type="text" placeholder="終點 (如：新大阪站)" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary">
-               <button @click="searchRailway" :disabled="isLoadingRailway" class="app-primary text-white w-full py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transition duration-200 disabled:opacity-50">
-                   <i :class="{'fas fa-search': !isLoadingRailway, 'fas fa-spinner fa-spin': isLoadingRailway}" class="mr-2"></i>
-                   {{ isLoadingRailway ? '查詢中...' : '查詢路線' }}
-               </button>
-           </div>
-
-           <div v-if="railwayResults.time" class="bg-white p-4 shadow-xl rounded-2xl border border-primary/10 space-y-3">
-               <h3 class="font-bold text-xl text-secondary border-b pb-2">查詢結果</h3>
-               <div class="flex justify-between items-center">
-                   <span class="text-gray-600"><i class="fas fa-clock mr-2 app-text-primary"></i>所需時間</span>
-                   <span class="font-bold text-lg">{{ railwayResults.time }}</span>
-               </div>
-               <div class="flex justify-between items-center">
-                   <span class="text-gray-600"><i class="fas fa-yen-sign mr-2 app-text-primary"></i>預估票價</span>
-                   <span class="font-bold text-lg">{{ railwayResults.fare.toLocaleString() }} JPY</span>
-               </div>
-               <div class="flex justify-between items-center">
-                   <span class="text-gray-600"><i class="fas fa-exchange-alt mr-2 app-text-primary"></i>轉乘次數</span>
-                   <span class="font-bold text-lg">{{ railwayResults.transfers }} 次</span>
-               </div>
-               <button @click="openTransitMap" class="app-secondary text-white w-full py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transition duration-200 mt-3">
-                   <i class="fas fa-map-marked-alt mr-2"></i> 在 Google 地圖上查看
-               </button>
-           </div>
-       </div>
-
-       <!-- 4. 天氣與地圖 (Weather & Map) -->
-       <div v-else-if="currentTab === 'weather'" class="space-y-6">
-           <h2 class="text-2xl font-bold app-text-primary border-b pb-2">☀️ 天氣與地圖</h2>
-
-           <!-- 天氣查詢 -->
-           <div class="bg-white p-4 shadow-xl rounded-2xl border border-primary/10 space-y-3">
-               <h3 class="font-semibold text-lg text-gray-700 border-b pb-2">城市天氣查詢 (模擬)</h3>
-               <div class="flex space-x-2">
-                   <input v-model="weatherQuery" @keyup.enter="getWeather" type="text" placeholder="輸入城市名稱 (如：東京)" class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary">
-                   <button @click="getWeather" :disabled="isLoadingWeather" class="app-primary text-white p-3 rounded-lg font-semibold shadow-md">
-                       <i :class="{'fas fa-search': !isLoadingWeather, 'fas fa-spinner fa-spin': isLoadingWeather}"></i>
-                   </button>
-               </div>
-
-               <div v-if="weatherResult.city" class="text-center p-4 bg-background rounded-xl shadow-inner">
-                   <p class="text-sm text-gray-500">{{ weatherResult.date }}</p>
-                   <i :class="weatherResult.iconClass" class="text-6xl app-text-primary my-3"></i>
-                   <h4 class="text-3xl font-bold text-gray-800">{{ weatherResult.city }}</h4>
-                   <p class="text-xl font-medium text-secondary mb-3">{{ weatherResult.description }}</p>
-
-                   <div class="flex justify-around text-sm text-gray-600 border-t pt-3">
-                       <div>
-                           <p class="font-bold text-lg app-text-primary">{{ weatherResult.temperature }}°C</p>
-                           <p>當前溫度</p>
-                       </div>
-                       <div>
-                           <p class="font-bold text-lg">{{ weatherResult.maxTemp }}°C / {{ weatherResult.minTemp }}°C</p>
-                           <p>高 / 低溫</p>
-                       </div>
-                       <div>
-                           <p class="font-bold text-lg">{{ weatherResult.humidity }}%</p>
-                           <p>濕度</p>
-                       </div>
-                       <div>
-                           <p class="font-bold text-lg">{{ weatherResult.windSpeed }} km/h</p>
-                           <p>風速</p>
-                       </div>
-                   </div>
-               </div>
-           </div>
-
-           <!-- 地圖查詢 -->
-           <div class="bg-white p-4 shadow-xl rounded-2xl border border-primary/10 space-y-3">
-               <h3 class="font-semibold text-lg text-gray-700 border-b pb-2">地點地圖查詢</h3>
-               <div class="flex space-x-2">
-                   <input v-model="mapQuery" @keyup.enter="openMap" type="text" placeholder="輸入地點名稱 (如：澀谷交叉路口)" class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary">
-                   <button @click="openMap" class="app-secondary text-white p-3 rounded-lg font-semibold shadow-md">
-                       <i class="fas fa-map-marker-alt"></i>
-                   </button>
-               </div>
-               <p class="text-xs text-gray-500 italic">點擊按鈕將在新視窗開啟 Google 地圖查詢。</p>
-           </div>
-       </div>
-
-   </main>
-
-   <!-- 底部版權資訊 -->
-   <footer class="p-3 text-center text-xs text-gray-500 border-t">
-       <p>Powered by Vue 3 & Tailwind CSS | FEARLESS JOURNEY © 2025</p>
-   </footer>
-</div>
-
-<script>
-   const { createApp, ref, reactive, computed } = Vue
-
-   createApp({
-       setup() {
-           const currentTab = ref('itinerary');
-           const tabs = [
-               { id: 'itinerary', name: '行程', icon: 'fas fa-route' },
-               { id: 'expenses', name: '分帳', icon: 'fas fa-wallet' },
-               { id: 'railway', name: '鐵路', icon: 'fas fa-train' },
-               { id: 'weather', name: '天氣', icon: 'fas fa-cloud-sun' },
-           ];
-
-           // --- 行程規劃邏輯 (Itinerary Logic) ---
-           const dailySchedule = reactive([
-               { id: 1, time: '09:00', location: '成田機場 (NRT)', details: '搭乘 Skyliner 前往市區', editing: false },
-               { id: 2, time: '12:30', location: '新宿御苑', details: '野餐午餐', editing: false },
-               { id: 3, time: '15:00', location: '東京都廳展望台', details: '免費觀景台', editing: false },
-               { id: 4, time: '18:30', location: '歌舞伎町', details: '晚餐：一蘭拉麵', editing: false },
-           ]);
-           const newActivity = reactive({
-               time: '10:00',
-               location: '',
-               details: ''
-           });
-
-           const sortedSchedule = computed(() => {
-               return [...dailySchedule].sort((a, b) => {
-                   if (a.time < b.time) return -1;
-                   if (a.time > b.time) return 1;
-                   return 0;
-               });
-           });
-
-           const addActivity = () => {
-               if (newActivity.location) {
-                   dailySchedule.push({
-                       id: Date.now(),
-                       time: newActivity.time,
-                       location: newActivity.location,
-                       details: newActivity.details,
-                       editing: false
-                   });
-                   newActivity.location = '';
-                   newActivity.details = '';
-               }
-           };
-
-           const deleteActivity = (id) => {
-               const index = dailySchedule.findIndex(activity => activity.id === id);
-               if (index !== -1) {
-                   dailySchedule.splice(index, 1);
-               }
-           };
-
-           const toggleEdit = (activity) => {
-               activity.editing = !activity.editing;
-           };
-
-           // --- 分帳系統邏輯 (Expense Logic) ---
-           const people = ref(['Manus', 'User', 'Friend A']);
-           const newPersonName = ref('');
-           const expenses = reactive([
-               { amount: 10000, description: '機票', paidBy: 'Manus', participants: ['Manus', 'User', 'Friend A'] },
-               { amount: 3000, description: '晚餐', paidBy: 'User', participants: ['Manus', 'User'] },
-               { amount: 500, description: '飲料', paidBy: 'Friend A', participants: ['Manus', 'User', 'Friend A'] },
-           ]);
-           const newExpense = reactive({
-               amount: null,
-               description: '',
-               paidBy: '',
-               participants: []
-           });
-
-           const addPerson = () => {
-               const name = newPersonName.value.trim();
-               if (name && !people.value.includes(name)) {
-                   people.value.push(name);
-                   newPersonName.value = '';
-               }
-           };
-
-           const removePerson = (person) => {
-               people.value = people.value.filter(p => p !== person);
-               // 移除相關支出中的參與者
-               expenses.forEach(expense => {
-                   expense.participants = expense.participants.filter(p => p !== person);
-                   if (expense.paidBy === person) {
-                       expense.paidBy = ''; // 如果付錢的人被移除，清空付錢人欄位
-                   }
-               });
-           };
-
-           const addExpense = () => {
-               if (newExpense.amount && newExpense.description && newExpense.paidBy && newExpense.participants.length > 0) {
-                   expenses.push({
-                       amount: newExpense.amount,
-                       description: newExpense.description,
-                       paidBy: newExpense.paidBy,
-                       participants: [...newExpense.participants] // 複製陣列
-                   });
-                   // 重置表單
-                   newExpense.amount = null;
-                   newExpense.description = '';
-                   newExpense.paidBy = '';
-                   newExpense.participants = [];
-               }
-           };
-
-           const deleteExpense = (index) => {
-               expenses.splice(index, 1);
-           };
-
-           const totalExpenses = computed(() => {
-               return expenses.reduce((sum, expense) => sum + expense.amount, 0);
-           });
-
-           const balances = computed(() => {
-               const balanceMap = {};
-               people.value.forEach(person => balanceMap[person] = 0);
-
-               expenses.forEach(expense => {
-                   const share = expense.amount / expense.participants.length;
-                   // 支付者餘額增加 (已付 - 應付)
-                   balanceMap[expense.paidBy] += expense.amount;
-
-                   // 參與者餘額減少 (應付)
-                   expense.participants.forEach(person => {
-                       balanceMap[person] -= share;
-                   });
-               });
-
-               // 四捨五入到小數點後兩位
-               for (const person in balanceMap) {
-                   balanceMap[person] = Math.round(balanceMap[person] * 100) / 100;
-               }
-
-               return balanceMap;
-           });
-
-           const settlements = computed(() => {
-               const balancesCopy = JSON.parse(JSON.stringify(balances.value)); // 深度複製
-               const debtors = [];
-               const creditors = [];
-               const settlements = [];
-
-               for (const person in balancesCopy) {
-                   if (balancesCopy[person] < 0) {
-                       debtors.push({ name: person, amount: -balancesCopy[person] });
-                   } else if (balancesCopy[person] > 0) {
-                       creditors.push({ name: person, amount: balancesCopy[person] });
-                   }
-               }
-
-               let dIndex = 0;
-               let cIndex = 0;
-
-               while (dIndex < debtors.length && cIndex < creditors.length) {
-                   let debtor = debtors[dIndex];
-                   let creditor = creditors[cIndex];
-
-                   const amountToSettle = Math.min(debtor.amount, creditor.amount);
-
-                   if (amountToSettle > 0) {
-                       settlements.push({
-                           from: debtor.name,
-                           to: creditor.name,
-                           amount: Math.round(amountToSettle * 100) / 100 // 確保結算金額四捨五入
-                       });
-                   }
-
-                   debtor.amount -= amountToSettle;
-                   creditor.amount -= amountToSettle;
-
-                   // 使用一個小容差來避免浮點數問題
-                   if (debtor.amount <= 0.01) { dIndex++; } // 修正容差判斷
-                   if (creditor.amount <= 0.01) { cIndex++; } // 修正容差判斷
-               }
-
-               return settlements;
-           });
-
-           // --- 鐵路系統邏輯 (Railway Logic) ---
-           const railwayOrigin = ref('東京站');
-           const railwayDestination = ref('新大阪站');
-           const isLoadingRailway = ref(false);
-           const railwayResults = reactive({
-               time: '',
-               fare: 0,
-               transfers: 0,
-           });
-
-           const searchRailway = async () => {
-               const origin = railwayOrigin.value.trim();
-               const destination = railwayDestination.value.trim();
-               if (!origin || !destination) return;
-
-               isLoadingRailway.value = true;
-               Object.assign(railwayResults, { time: '', fare: 0, transfers: 0 });
-
-               await new Promise(resolve => setTimeout(resolve, 1800)); // 模擬 API 延遲
-
-               // 根據常見路線模擬結果
-               let time = '約 2.5 小時';
-               let fare = 14000; // 新幹線票價
-               let transfers = 1;
-
-               if (origin.includes('東京') && destination.includes('大阪')) {
-                   time = '約 2.5 小時';
-                   fare = 14000;
-                   transfers = 1;
-               } else if (origin.includes('京都') && destination.includes('大阪')) {
-                   time = '約 30 分鐘';
-                   fare = 570;
-                   transfers = 0;
-               } else if (origin.includes('澀谷') && destination.includes('新宿')) {
-                   time = '約 10 分鐘';
-                   fare = 160;
-                   transfers = 0;
-               }
-
-               Object.assign(railwayResults, {
-                   time: time,
-                   fare: fare,
-                   transfers: transfers,
-               });
-
-               isLoadingRailway.value = false;
-           };
-
-           const openTransitMap = () => {
-               const origin = encodeURIComponent(railwayOrigin.value.trim() + ' Japan');
-               const destination = encodeURIComponent(railwayDestination.value.trim() + ' Japan');
-               // 使用 Google Maps 交通模式進行導航
-               const mapUrl = `https://www.google.com/maps/dir/${origin}/${destination}/data=!4m2!4m1!3e3`;
-               window.open(mapUrl, '_blank');
-           };
-
-           // --- 天氣功能邏輯 (Weather Logic) ---
-           const weatherQuery = ref('東京');
-           const isLoadingWeather = ref(false);
-           const weatherResult = reactive({
-               city: '',
-               date: '',
-               temperature: '',
-               description: '',
-               humidity: '',
-               windSpeed: '',
-               maxTemp: '',
-               minTemp: '',
-               iconClass: 'fas fa-question-circle'
-           });
-
-           // 模擬天氣 API 響應
-           const getWeather = async () => {
-               const query = weatherQuery.value.trim();
-               if (!query) return;
-
-               isLoadingWeather.value = true;
-               Object.assign(weatherResult, { city: '', date: '', temperature: '', description: '', humidity: '', windSpeed: '', maxTemp: '', minTemp: '', iconClass: 'fas fa-question-circle' });
-
-               await new Promise(resolve => setTimeout(resolve, 1500)); // 模擬 API 延遲
-
-               const mockData = {
-                   '東京': { temp: 18, desc: '晴朗無雲', icon: 'fas fa-sun', hum: 60, wind: 15, max: 22, min: 14 },
-                   '大阪': { temp: 24, desc: '多雲時晴', icon: 'fas fa-cloud-sun', hum: 75, wind: 10, max: 26, min: 20 },
-                   '京都': { temp: 15, desc: '陣雨', icon: 'fas fa-cloud-showers-heavy', hum: 85, wind: 8, max: 17, min: 12 },
-                   '札幌': { temp: 5, desc: '小雪', icon: 'fas fa-snowflake', hum: 70, wind: 20, max: 7, min: 2 },
-               };
-
-               const data = mockData[query] || mockData['東京']; // 如果找不到，預設為東京
-
-               Object.assign(weatherResult, {
-                   city: query,
-                   date: new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'short', day: 'numeric' }),
-                   temperature: data.temp,
-                   description: data.desc,
-                   humidity: data.hum,
-                   windSpeed: data.wind,
-                   maxTemp: data.max,
-                   minTemp: data.min,
-                   iconClass: data.icon
-               });
-
-               isLoadingWeather.value = false;
-           };
-
-           // 預設載入東京天氣
-           getWeather();
-
-           // --- 地圖與導航邏輯 (Map Logic) ---
-           const mapQuery = ref('澀谷交叉路口');
-
-           const openMap = () => {
-               if (mapQuery.value.trim()) {
-                   const query = encodeURIComponent(mapQuery.value.trim() + ' Japan');
-                   const mapUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
-                   window.open(mapUrl, '_blank');
-               }
-           };
-
-
-           return {
-               currentTab,
-               tabs,
-               dailySchedule,
-               newActivity,
-               sortedSchedule,
-               addActivity,
-               deleteActivity,
-               toggleEdit,
-
-               people,
-               newPersonName,
-               expenses,
-               newExpense,
-               addPerson,
-               removePerson,
-               addExpense,
-               deleteExpense,
-               totalExpenses,
-               balances,
-               settlements,
-
-               railwayOrigin,
-               railwayDestination,
-               isLoadingRailway,
-               railwayResults,
-               searchRailway,
-               openTransitMap,
-
-               weatherQuery,
-               isLoadingWeather,
-               weatherResult,
-               getWeather,
-
-               mapQuery,
-               openMap,
-           };
-       }
-   }).mount('#app')
-</script>
 
+<body class="min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
+  <div
+    id="app"
+    class="max-w-md mx-auto bg-white min-h-screen flex flex-col rounded-3xl shadow-2xl overflow-hidden"
+  >
+    <!-- 狀態列 -->
+    <div class="status-bar"></div>
+
+    <!-- Hero / Logo 區（含浮水印） -->
+    <div
+      class="app-secondary text-white px-6 pt-6 pb-8 shadow-lg relative overflow-hidden"
+    >
+      <!-- 浮水印 -->
+      <div
+        class="absolute inset-0 flex items-center justify-center opacity-20 pointer-events-none"
+      >
+        <!-- 把 logo 圖檔存成 logo.png 放在同資料夾 -->
+        <img
+          src="logo.png"
+          alt="LE SSERAFIM Logo"
+          class="w-64 max-w-[80%] object-contain drop-shadow-[0_0_24px_rgba(0,0,0,0.8)]"
+        />
+      </div>
+
+      <!-- 前景內容 -->
+      <div class="relative text-center space-y-2">
+        <h1
+          class="text-3xl font-extrabold tracking-[0.35em] uppercase mb-1 drop-shadow"
+        >
+          FEARLESS TRIP
+        </h1>
+        <p
+          class="text-xs font-light tracking-[0.22em] opacity-80 uppercase mb-3"
+        >
+          Japan Travel Planner
+        </p>
+
+        <div
+          class="flex justify-center space-x-4 text-primary text-xl drop-shadow"
+        >
+          <i class="fas fa-route"></i>
+          <i class="fas fa-cloud-sun"></i>
+          <i class="fas fa-wallet"></i>
+          <i class="fas fa-train"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 切換 -->
+    <header
+      class="sticky top-0 z-20 bg-white/90 backdrop-blur p-3 border-b border-gray-200"
+    >
+      <div
+        class="flex justify-around p-1 bg-gray-100 rounded-2xl shadow-inner gap-1"
+      >
+        <button
+          v-for="tab in tabs"
+          :key="tab.id"
+          @click="currentTab = tab.id"
+          :class="[
+            'relative flex-1 py-2 rounded-xl font-medium transition-all duration-300 flex items-center justify-center space-x-1',
+            currentTab === tab.id
+              ? 'bg-primary text-white shadow-lg'
+              : 'text-gray-600 hover:bg-white'
+          ]"
+        >
+          <i :class="tab.icon"></i>
+          <span class="text-xs sm:text-sm">{{ tab.name }}</span>
+          <span
+            v-if="currentTab === tab.id"
+            class="absolute -bottom-1 left-4 right-4 h-0.5 bg-white/80 rounded-full"
+          ></span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 內容區域 -->
+    <main class="flex-grow p-4 overflow-y-auto no-scrollbar app-bg">
+      <!-- 1. 行程表 -->
+      <section v-if="currentTab === 'itinerary'" class="space-y-6">
+        <h2
+          class="flex items-center justify-between text-2xl font-bold app-text-primary border-b pb-2"
+        >
+          <span>📅 每日行程規劃</span>
+          <span
+            class="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary font-semibold tracking-wide uppercase"
+          >
+            Day 1 ‧ 關西
+          </span>
+        </h2>
+
+        <!-- 新增行程表單 -->
+        <form
+          @submit.prevent="addActivity"
+          class="bg-white p-4 shadow-xl rounded-2xl border border-primary/10 space-y-3"
+        >
+          <div class="flex gap-2">
+            <input
+              v-model="newActivity.time"
+              type="time"
+              required
+              class="w-24 p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-center text-sm"
+            />
+            <input
+              v-model="newActivity.location"
+              type="text"
+              placeholder="地點 (如：東京鐵塔)"
+              required
+              class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-sm"
+            />
+          </div>
+          <textarea
+            v-model="newActivity.details"
+            placeholder="備註 (如：門票已購買)"
+            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary resize-none text-sm"
+            rows="2"
+          ></textarea>
+          <button
+            type="submit"
+            class="app-primary text-white w-full py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transition duration-200 text-sm"
+          >
+            <i class="fas fa-plus mr-2"></i> 新增活動
+          </button>
+        </form>
+
+        <!-- 行程列表 -->
+        <div
+          v-if="sortedSchedule.length === 0"
+          class="text-center p-8 bg-white rounded-2xl shadow-md text-gray-500"
+        >
+          <i class="far fa-calendar-alt text-4xl mb-3 app-text-primary"></i>
+          <p>還沒有行程，無畏地新增你的旅程吧！</p>
+        </div>
+
+        <div v-else class="space-y-4">
+          <div
+            v-for="(activity, index) in sortedSchedule"
+            :key="activity.id"
+            class="relative pl-7"
+          >
+            <!-- 時間線點 -->
+            <div
+              class="absolute left-0 top-1.5 w-3 h-3 app-primary rounded-full ring-4 ring-primary/30"
+            ></div>
+
+            <!-- 連接線（不畫到最後一個） -->
+            <div
+              v-if="index < sortedSchedule.length - 1"
+              class="absolute left-[6px] top-4 bottom-[-10px] w-0.5 bg-primary/40"
+            ></div>
+
+            <div
+              :class="[
+                'bg-white p-4 rounded-xl shadow-md transition-all duration-300 border',
+                activity.editing
+                  ? 'bg-red-50/70 border-primary/40'
+                  : 'border-transparent hover:border-primary/30'
+              ]"
+            >
+              <!-- 檢視模式 -->
+              <div
+                v-if="!activity.editing"
+                @click="toggleEdit(activity)"
+                class="cursor-pointer"
+              >
+                <p class="font-bold text-lg app-text-primary">
+                  {{ activity.time }}
+                </p>
+                <h3 class="font-semibold text-gray-800 text-base">
+                  {{ activity.location }}
+                </h3>
+                <p
+                  v-if="activity.details"
+                  class="text-xs text-gray-600 mt-1 italic"
+                >
+                  {{ activity.details }}
+                </p>
+                <div class="mt-2 text-right space-x-2">
+                  <button
+                    @click.stop="deleteActivity(activity.id)"
+                    class="text-red-500 hover:text-red-700 px-2 py-1 rounded text-xs"
+                  >
+                    <i class="fas fa-trash-alt mr-1"></i>刪除
+                  </button>
+                  <button
+                    @click.stop="toggleEdit(activity)"
+                    class="text-secondary hover:text-secondary/80 px-2 py-1 rounded text-xs"
+                  >
+                    <i class="fas fa-edit mr-1"></i>編輯
+                  </button>
+                </div>
+              </div>
+
+              <!-- 編輯模式 -->
+              <div v-else class="space-y-2">
+                <div class="flex gap-2">
+                  <input
+                    v-model="activity.time"
+                    type="time"
+                    class="w-24 p-2 border rounded-lg focus:ring-primary focus:border-primary text-sm text-center"
+                  />
+                  <input
+                    v-model="activity.location"
+                    type="text"
+                    class="flex-1 p-2 border rounded-lg focus:ring-primary focus:border-primary text-sm"
+                  />
+                </div>
+                <textarea
+                  v-model="activity.details"
+                  class="w-full p-2 border rounded-lg resize-none focus:ring-primary focus:border-primary text-sm"
+                  rows="2"
+                ></textarea>
+                <button
+                  @click="toggleEdit(activity)"
+                  class="app-primary text-white w-full py-2 rounded-lg font-medium text-sm"
+                >
+                  <i class="fas fa-check mr-1"></i> 完成編輯
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. 分帳系統 -->
+      <section v-else-if="currentTab === 'expenses'" class="space-y-6">
+        <h2
+          class="text-2xl font-bold app-text-primary border-b pb-2 flex items-center justify-between"
+        >
+          <span>💰 旅遊分帳結算</span>
+          <span
+            class="text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary font-semibold tracking-wide"
+          >
+            JPY
+          </span>
+        </h2>
+
+        <!-- 旅伴列表 -->
+        <div
+          class="bg-white p-4 shadow-xl rounded-2xl border border-primary/10 space-y-4"
+        >
+          <h3
+            class="font-semibold text-lg text-gray-700 border-b pb-2 flex items-center justify-between"
+          >
+            <span>旅伴名單</span>
+            <span class="text-xs text-gray-400"
+              >共 {{ people.length }} 人</span
+            >
+          </h3>
+          <div class="flex flex-wrap gap-2 mb-2">
+            <span
+              v-for="person in people"
+              :key="person"
+              class="bg-secondary/10 text-secondary font-medium py-1 px-3 rounded-full flex items-center shadow-sm text-xs"
+            >
+              {{ person }}
+              <button
+                @click="removePerson(person)"
+                class="ml-2 text-[11px] text-secondary/70 hover:text-secondary transition"
+              >
+                <i class="fas fa-times-circle"></i>
+              </button>
+            </span>
+          </div>
+          <div class="flex space-x-2">
+            <input
+              v-model="newPersonName"
+              @keyup.enter="addPerson"
+              type="text"
+              placeholder="新增旅伴名稱"
+              class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-sm"
+            />
+            <button
+              @click="addPerson"
+              class="app-secondary text-white px-3 rounded-lg font-semibold shadow-md text-sm"
+            >
+              <i class="fas fa-user-plus"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- 新增支出 -->
+        <form
+          @submit.prevent="addExpense"
+          class="bg-white p-4 shadow-xl rounded-2xl border border-primary/10 space-y-3"
+        >
+          <h3
+            class="font-semibold text-lg text-gray-700 border-b pb-2 flex items-center justify-between"
+          >
+            <span>記錄新支出 (JPY)</span>
+          </h3>
+          <input
+            v-model.number="newExpense.amount"
+            type="number"
+            placeholder="金額 (JPY)"
+            required
+            min="1"
+            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-sm"
+          />
+          <input
+            v-model="newExpense.description"
+            type="text"
+            placeholder="支出項目 (如：午餐、伴手禮)"
+            required
+            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-sm"
+          />
+          <select
+            v-model="newExpense.paidBy"
+            required
+            class="w-full p-3 border border-gray-300 rounded-lg bg-white focus:ring-primary focus:border-primary text-sm"
+          >
+            <option value="" disabled>誰付的錢？</option>
+            <option v-for="person in people" :key="person" :value="person">
+              {{ person }}
+            </option>
+          </select>
+
+          <p class="font-medium text-gray-700 mt-3 text-sm">
+            誰參與了這筆分帳？
+          </p>
+          <div class="flex flex-wrap gap-3">
+            <label
+              v-for="person in people"
+              :key="person"
+              class="inline-flex items-center bg-gray-100 p-2 rounded-lg shadow-inner text-xs"
+            >
+              <input
+                type="checkbox"
+                :value="person"
+                v-model="newExpense.participants"
+                class="form-checkbox text-primary rounded focus:ring-primary mr-2"
+              />
+              <span class="text-gray-700">{{ person }}</span>
+            </label>
+          </div>
+          <button
+            type="submit"
+            :disabled="people.length < 2 || newExpense.participants.length === 0"
+            class="app-primary text-white w-full py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transition duration-200 disabled:opacity-50 text-sm"
+          >
+            <i class="fas fa-credit-card mr-2"></i> 記錄支出
+          </button>
+        </form>
+
+        <!-- 總覽卡片 -->
+        <div class="grid grid-cols-2 gap-3">
+          <div
+            class="bg-white p-3 rounded-xl shadow-inner text-center border border-primary/10"
+          >
+            <p class="text-xs text-gray-500">目前總支出</p>
+            <p class="text-xl font-bold text-secondary mt-1">
+              {{ totalExpense.toLocaleString() }} JPY
+            </p>
+          </div>
+          <div
+            class="bg-white p-3 rounded-xl shadow-inner text-center border border-primary/10"
+          >
+            <p class="text-xs text-gray-500">平均每人</p>
+            <p class="text-xl font-bold text-secondary mt-1">
+              {{ averageExpensePerPerson.toLocaleString() }} JPY
+            </p>
+          </div>
+        </div>
+
+        <!-- 結算結果 -->
+        <div class="bg-secondary text-white p-4 shadow-xl rounded-2xl mt-3">
+          <h3
+            class="font-bold text-xl mb-3 flex justify-between items-center border-b border-white/30 pb-2"
+          >
+            <span>結算結果</span>
+            <i class="fas fa-handshake text-2xl app-text-primary"></i>
+          </h3>
+          <div
+            v-if="settlements.length === 0"
+            class="text-center text-white/80 p-4 text-sm"
+          >
+            <p>新增幾筆支出之後，這裡會自動產生最簡結算方案。</p>
+          </div>
+          <div v-else class="space-y-2">
+            <div
+              v-for="(settlement, index) in settlements"
+              :key="index"
+              class="bg-white text-gray-800 p-3 rounded-lg flex justify-between items-center shadow-inner border border-emerald-100 text-sm"
+            >
+              <span class="font-medium">
+                <span class="text-red-500 font-semibold">
+                  {{ settlement.from }}
+                </span>
+                <i
+                  class="fas fa-long-arrow-alt-right mx-2 app-text-primary"
+                ></i>
+                <span class="text-emerald-600 font-semibold">
+                  {{ settlement.to }}
+                </span>
+              </span>
+              <span class="font-bold text-lg text-emerald-700">
+                {{ settlement.amount.toLocaleString() }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. 鐵路系統 -->
+      <section v-else-if="currentTab === 'railway'" class="space-y-6">
+        <h2 class="text-2xl font-bold app-text-primary border-b pb-2">
+          🚄 日本鐵路/交通查詢
+        </h2>
+
+        <div
+          class="bg-white p-4 shadow-xl rounded-2xl border border-primary/10 space-y-3"
+        >
+          <p class="font-medium text-gray-700 text-sm">
+            查詢轉乘時間與預估票價：
+          </p>
+          <input
+            v-model="railwayOrigin"
+            type="text"
+            placeholder="起點 (如：東京站)"
+            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-sm"
+          />
+          <input
+            v-model="railwayDestination"
+            type="text"
+            placeholder="終點 (如：新大阪站)"
+            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-sm"
+          />
+          <button
+            @click="searchRailway"
+            :disabled="isLoadingRailway"
+            class="app-primary text-white w-full py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transition duration-200 disabled:opacity-50 text-sm"
+          >
+            <i
+              v-if="!isLoadingRailway"
+              class="fas fa-search-location mr-2"
+            ></i>
+            <i v-else class="fas fa-spinner animate-spin mr-2"></i>
+            查詢路線
+          </button>
+        </div>
+
+        <!-- 鐵路結果 -->
+        <div
+          v-if="railwayResults.time || isLoadingRailway"
+          class="mt-2 bg-white p-6 rounded-2xl shadow-xl border border-primary/10"
+        >
+          <div
+            v-if="isLoadingRailway"
+            class="text-center p-8 text-primary font-medium space-y-2"
+          >
+            <i class="fas fa-train fa-beat-fade text-3xl mb-1"></i>
+            <p>正在查詢最佳轉乘方案中...</p>
+            <p class="text-xs text-gray-500">
+              依照網路狀況，大約需要幾秒鐘。
+            </p>
+          </div>
+
+          <div v-else-if="railwayResults.time">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+              <h3
+                class="text-lg font-bold text-gray-800 flex-1 leading-snug"
+              >
+                {{ railwayOrigin }}
+                <i class="fas fa-arrow-right mx-2 app-text-primary"></i>
+                {{ railwayDestination }}
+              </h3>
+            </div>
+
+            <div class="grid grid-cols-3 gap-4 text-center text-sm">
+              <div class="p-2 bg-background rounded-lg shadow-inner">
+                <i class="fas fa-clock text-xl app-text-primary mb-1"></i>
+                <p class="text-xs text-gray-500">總時間</p>
+                <p class="font-bold text-secondary">
+                  {{ railwayResults.time }}
+                </p>
+              </div>
+              <div class="p-2 bg-background rounded-lg shadow-inner">
+                <i class="fas fa-yen-sign text-xl app-text-primary mb-1"></i>
+                <p class="text-xs text-gray-500">票價 (預估)</p>
+                <p class="font-bold text-secondary">
+                  {{ railwayResults.fare.toLocaleString() }} JPY
+                </p>
+              </div>
+              <div class="p-2 bg-background rounded-lg shadow-inner">
+                <i
+                  class="fas fa-exchange-alt text-xl app-text-primary mb-1"
+                ></i>
+                <p class="text-xs text-gray-500">轉乘次數</p>
+                <p class="font-bold text-secondary">
+                  {{ railwayResults.transfers }}
+                </p>
+              </div>
+            </div>
+
+            <p
+              class="text-xs text-gray-600 mt-4 italic border-t pt-2 flex items-start gap-1"
+            >
+              <i class="fas fa-lightbulb app-text-primary mt-0.5"></i>
+              <span
+                >提示：此為模擬預估值，實際班次與票價請以官方即時資訊為主。</span
+              >
+            </p>
+            <button
+              @click="openTransitMap"
+              class="w-full mt-4 bg-secondary text-white py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transition duration-200 text-sm"
+            >
+              <i class="fas fa-map-pin mr-2"></i> 在 Google Maps 查看即時交通
+            </button>
+          </div>
+        </div>
+
+        <div
+          v-else
+          class="text-center p-8 bg-white rounded-2xl shadow-md text-gray-500 text-sm"
+        >
+          <i class="fas fa-map-signs text-4xl mb-3 app-text-primary"></i>
+          <p>輸入起點與終點，查詢你的日本鐵路旅程。</p>
+        </div>
+      </section>
+
+      <!-- 4. 天氣 -->
+      <section v-else-if="currentTab === 'weather'" class="space-y-6">
+        <h2 class="text-2xl font-bold app-text-primary border-b pb-2">
+          ☀️ 當地天氣查詢
+        </h2>
+
+        <div
+          class="bg-white p-4 shadow-xl rounded-2xl border border-primary/10 space-y-3"
+        >
+          <p class="font-medium text-gray-700 text-sm">
+            請輸入日本城市名稱：
+          </p>
+          <div class="flex space-x-2">
+            <input
+              v-model="weatherQuery"
+              @keyup.enter="getWeather"
+              type="text"
+              placeholder="例如：東京, 大阪, 京都"
+              class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-sm"
+            />
+            <button
+              @click="getWeather"
+              :disabled="isLoadingWeather"
+              class="app-primary text-white px-3 rounded-lg font-semibold shadow-md hover:shadow-lg transition duration-200 disabled:opacity-50 text-sm"
+            >
+              <i v-if="!isLoadingWeather" class="fas fa-search"></i>
+              <i v-else class="fas fa-spinner animate-spin"></i>
+            </button>
+          </div>
+        </div>
+
+        <div
+          v-if="weatherResult.city || isLoadingWeather"
+          class="mt-2 bg-white p-6 rounded-2xl shadow-xl border border-primary/10"
+        >
+          <div
+            v-if="isLoadingWeather"
+            class="text-center p-8 text-primary font-medium space-y-2"
+          >
+            <i class="fas fa-sun fa-spin text-3xl mb-1"></i>
+            <p>正在查詢天氣資訊中...</p>
+            <p class="text-xs text-gray-500">
+              如果網路較慢，可能需要一點時間。
+            </p>
+          </div>
+
+          <div v-else-if="weatherResult.city">
+            <div
+              class="flex justify-between items-center mb-4 border-b pb-2 text-sm"
+            >
+              <h3 class="text-2xl font-bold text-gray-800">
+                {{ weatherResult.city }}
+              </h3>
+              <p class="text-xs text-gray-500">{{ weatherResult.date }}</p>
+            </div>
+
+            <div class="flex items-center justify-start space-x-6">
+              <div class="text-5xl app-text-primary">
+                <i :class="weatherResult.iconClass"></i>
+              </div>
+              <div>
+                <p class="text-4xl font-extrabold text-gray-900">
+                  {{ weatherResult.temperature }}°C
+                </p>
+                <p class="text-lg font-medium text-gray-600">
+                  {{ weatherResult.description }}
+                </p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-4 mt-6 pt-4 border-t text-sm">
+              <div class="text-center p-2 bg-background rounded-lg shadow-inner">
+                <p class="text-[11px] text-gray-500">濕度</p>
+                <p class="font-bold text-secondary text-lg">
+                  {{ weatherResult.humidity }}%
+                </p>
+              </div>
+              <div class="text-center p-2 bg-background rounded-lg shadow-inner">
+                <p class="text-[11px] text-gray-500">風速</p>
+                <p class="font-bold text-secondary text-lg">
+                  {{ weatherResult.windSpeed }} km/h
+                </p>
+              </div>
+              <div class="text-center p-2 bg-background rounded-lg shadow-inner">
+                <p class="text-[11px] text-gray-500">高/低溫</p>
+                <p class="font-bold text-secondary text-lg">
+                  {{ weatherResult.maxTemp }}/{{ weatherResult.minTemp }}°C
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-else
+          class="text-center p-8 bg-white rounded-2xl shadow-md text-gray-500 text-sm"
+        >
+          <i class="fas fa-cloud text-4xl mb-3 app-text-primary"></i>
+          <p>請輸入地點進行查詢。</p>
+        </div>
+      </section>
+
+      <!-- 5. 地圖與導航 -->
+      <section v-else-if="currentTab === 'map'" class="space-y-6">
+        <h2 class="text-2xl font-bold app-text-primary border-b pb-2">
+          🗺️ 地圖與導航
+        </h2>
+
+        <div
+          class="bg-white p-4 shadow-xl rounded-2xl border border-primary/10 space-y-3"
+        >
+          <p class="font-medium text-gray-700 text-sm">
+            搜尋地點並開啟 Google Maps 導航：
+          </p>
+          <div class="flex space-x-2">
+            <input
+              v-model="mapQuery"
+              @keyup.enter="openMap"
+              type="text"
+              placeholder="輸入地點 (如：澀谷交叉路口)"
+              class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-sm"
+            />
+            <button
+              @click="openMap"
+              class="app-primary text-white px-3 rounded-lg font-semibold shadow-md hover:shadow-lg transition duration-200 text-sm"
+            >
+              <i class="fas fa-location-arrow"></i>
+            </button>
+          </div>
+          <p class="text-xs text-gray-500 italic mt-2 flex items-start gap-1">
+            <i class="fas fa-info-circle app-text-primary mt-0.5"></i>
+            <span>點擊按鈕將在新視窗中開啟 Google Maps。</span>
+          </p>
+
+          <!-- 常用地點捷徑 -->
+          <div class="flex flex-wrap gap-2 mt-2">
+            <button
+              v-for="preset in mapPresets"
+              :key="preset"
+              @click="mapQuery = preset; openMap();"
+              class="px-3 py-1 text-[11px] rounded-full bg-gray-100 text-gray-700 hover:bg-primary hover:text-white transition"
+            >
+              {{ preset }}
+            </button>
+          </div>
+        </div>
+
+        <!-- 地標預覽 -->
+        <div
+          class="mt-2 bg-white p-4 rounded-2xl shadow-xl text-center border border-primary/10"
+        >
+          <h3 class="font-bold text-xl app-text-primary mb-3">
+            📍 日本地標預覽
+          </h3>
+          <img
+            src="https://placehold.co/400x200/f7004f/ffffff?text=I%27m+FEARLESS"
+            alt="LE SSERAFIM 風格封面圖片"
+            class="w-full h-auto rounded-lg shadow-md object-cover"
+          />
+          <p class="text-xs text-gray-600 mt-2">
+            預覽圖僅供示意，實際導航請使用上方搜尋功能。
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer
+      class="p-3 text-center text-[11px] text-gray-500 border-t mt-4 sticky bottom-0 bg-white/90 shadow-inner"
+    >
+      © 2024 FEARLESS TRIP Planner · Made with ❤ for Japan & LE SSERAFIM
+    </footer>
+  </div>
+
+  <script>
+    const { createApp, ref, reactive, computed, watch } = Vue;
+
+    createApp({
+      setup() {
+        const currentTab = ref("itinerary");
+        const tabs = [
+          { id: "itinerary", name: "行程表", icon: "fas fa-route" },
+          { id: "expenses", name: "分帳", icon: "fas fa-hand-holding-usd" },
+          { id: "railway", name: "鐵路系統", icon: "fas fa-train" },
+          { id: "weather", name: "天氣", icon: "fas fa-cloud-sun" },
+          { id: "map", name: "地圖", icon: "fas fa-map-marked-alt" },
+        ];
+
+        const STORAGE_KEYS = {
+          schedule: "fearless_schedule_v1",
+          people: "fearless_people_v1",
+          expenses: "fearless_expenses_v1",
+        };
+
+        const safeLoad = (key, fallback) => {
+          try {
+            const raw = localStorage.getItem(key);
+            if (!raw) return fallback;
+            const parsed = JSON.parse(raw);
+            return parsed ?? fallback;
+          } catch (e) {
+            return fallback;
+          }
+        };
+
+        // ----- 行程表 -----
+        let activityIdCounter = 0;
+        const defaultSchedule = [
+          {
+            id: ++activityIdCounter,
+            time: "08:00",
+            location: "抵達關西機場 (KIX)",
+            details: "準備搭乘 JR Haruka 前往京都",
+          },
+          {
+            id: ++activityIdCounter,
+            time: "12:00",
+            location: "入住京都飯店",
+            details: "於四條河原町區域辦理入住",
+          },
+          {
+            id: ++activityIdCounter,
+            time: "14:00",
+            location: "清水寺",
+            details: "參觀清水舞台與音羽瀑布",
+          },
+        ];
+
+        const loadedSchedule = safeLoad(STORAGE_KEYS.schedule, null);
+        if (Array.isArray(loadedSchedule)) {
+          loadedSchedule.forEach((a) => {
+            if (typeof a.id === "number" && a.id > activityIdCounter) {
+              activityIdCounter = a.id;
+            }
+          });
+        }
+
+        const initialSchedule =
+          Array.isArray(loadedSchedule) && loadedSchedule.length
+            ? loadedSchedule
+            : defaultSchedule;
+
+        const dailySchedule = reactive(
+          initialSchedule.map((a) => ({
+            ...a,
+            editing: false,
+          }))
+        );
+
+        const newActivity = reactive({
+          time: "09:00",
+          location: "",
+          details: "",
+        });
+
+        const sortedSchedule = computed(() => {
+          return [...dailySchedule].sort((a, b) =>
+            String(a.time).localeCompare(String(b.time))
+          );
+        });
+
+        const addActivity = () => {
+          if (!newActivity.location.trim()) return;
+          dailySchedule.push({
+            id: ++activityIdCounter,
+            time: newActivity.time || "09:00",
+            location: newActivity.location.trim(),
+            details: newActivity.details.trim(),
+            editing: false,
+          });
+          newActivity.time = "09:00";
+          newActivity.location = "";
+          newActivity.details = "";
+        };
+
+        const deleteActivity = (id) => {
+          const index = dailySchedule.findIndex((item) => item.id === id);
+          if (index !== -1) {
+            dailySchedule.splice(index, 1);
+          }
+        };
+
+        const toggleEdit = (activity) => {
+          activity.editing = !activity.editing;
+        };
+
+        // 存行程到 localStorage（不存 editing 狀態）
+        watch(
+          dailySchedule,
+          (val) => {
+            const toSave = val.map(({ editing, ...rest }) => rest);
+            localStorage.setItem(
+              STORAGE_KEYS.schedule,
+              JSON.stringify(toSave)
+            );
+          },
+          { deep: true }
+        );
+
+        // ----- 分帳系統 -----
+        const defaultPeople = ["采源", "咲良", "恩採"];
+        const people = ref(safeLoad(STORAGE_KEYS.people, defaultPeople));
+
+        const defaultExpenses = [
+          {
+            description: "機場車票",
+            amount: 5000,
+            paidBy: "采源",
+            participants: ["采源", "咲良"],
+          },
+          {
+            description: "晚餐壽司",
+            amount: 8400,
+            paidBy: "咲良",
+            participants: ["采源", "咲良", "恩採"],
+          },
+        ];
+        const expensesArray = safeLoad(
+          STORAGE_KEYS.expenses,
+          defaultExpenses
+        );
+        const expenses = reactive(expensesArray);
+
+        const newExpense = reactive({
+          description: "",
+          amount: null,
+          paidBy: "",
+          participants: [],
+        });
+
+        const addPerson = () => {
+          const name = newPersonName.value.trim();
+          if (name && !people.value.includes(name)) {
+            people.value.push(name);
+            newPersonName.value = "";
+          }
+        };
+
+        const newPersonName = ref("");
+
+        const removePerson = (name) => {
+          people.value = people.value.filter((p) => p !== name);
+          expenses.forEach((expense) => {
+            expense.participants = expense.participants.filter(
+              (p) => p !== name
+            );
+            if (expense.paidBy === name) {
+              expense.paidBy = people.value[0] || "";
+            }
+          });
+        };
+
+        const addExpense = () => {
+          if (
+            !(newExpense.amount > 0) ||
+            !newExpense.description.trim() ||
+            !newExpense.paidBy ||
+            newExpense.participants.length === 0
+          )
+            return;
+
+          expenses.push({
+            description: newExpense.description.trim(),
+            amount: Number(newExpense.amount),
+            paidBy: newExpense.paidBy,
+            participants: [...newExpense.participants],
+          });
+
+          Object.assign(newExpense, {
+            description: "",
+            amount: null,
+            paidBy: "",
+            participants: [],
+          });
+        };
+
+        const settlements = computed(() => {
+          const balances = {};
+          people.value.forEach((p) => (balances[p] = 0));
+
+          expenses.forEach((expense) => {
+            const costPerPerson =
+              expense.amount / expense.participants.length;
+            if (balances[expense.paidBy] !== undefined) {
+              balances[expense.paidBy] += expense.amount;
+            }
+            expense.participants.forEach((person) => {
+              if (balances[person] !== undefined) {
+                balances[person] -= costPerPerson;
+              }
+            });
+          });
+
+          Object.keys(balances).forEach((person) => {
+            balances[person] = Math.round(balances[person]);
+          });
+
+          const debtors = [];
+          const creditors = [];
+          const result = [];
+
+          Object.entries(balances).forEach(([person, amount]) => {
+            if (amount < 0) debtors.push({ name: person, amount: -amount });
+            else if (amount > 0) creditors.push({ name: person, amount });
+          });
+
+          let dIndex = 0;
+          let cIndex = 0;
+
+          while (dIndex < debtors.length && cIndex < creditors.length) {
+            const debtor = debtors[dIndex];
+            const creditor = creditors[cIndex];
+            const amountToSettle = Math.min(
+              debtor.amount,
+              creditor.amount
+            );
+
+            if (amountToSettle > 0) {
+              result.push({
+                from: debtor.name,
+                to: creditor.name,
+                amount: amountToSettle,
+              });
+            }
+
+            debtor.amount -= amountToSettle;
+            creditor.amount -= amountToSettle;
+
+            if (debtor.amount <= 1) dIndex++;
+            if (creditor.amount <= 1) cIndex++;
+          }
+
+          return result;
+        });
+
+        const totalExpense = computed(() =>
+          expenses.reduce((sum, e) => sum + (e.amount || 0), 0)
+        );
+
+        const averageExpensePerPerson = computed(() => {
+          if (!people.value.length) return 0;
+          return Math.round(totalExpense.value / people.value.length);
+        });
+
+        // 存 people / expenses 到 localStorage
+        watch(
+          people,
+          (val) => {
+            localStorage.setItem(
+              STORAGE_KEYS.people,
+              JSON.stringify(val)
+            );
+          },
+          { deep: true }
+        );
+
+        watch(
+          expenses,
+          (val) => {
+            localStorage.setItem(
+              STORAGE_KEYS.expenses,
+              JSON.stringify(val)
+            );
+          },
+          { deep: true }
+        );
+
+        // ----- 鐵路 -----
+        const railwayOrigin = ref("東京站");
+        const railwayDestination = ref("新大阪站");
+        const isLoadingRailway = ref(false);
+        const railwayResults = reactive({
+          time: "",
+          fare: 0,
+          transfers: 0,
+        });
+
+        const searchRailway = async () => {
+          const origin = railwayOrigin.value.trim();
+          const destination = railwayDestination.value.trim();
+          if (!origin || !destination) return;
+
+          isLoadingRailway.value = true;
+          Object.assign(railwayResults, {
+            time: "",
+            fare: 0,
+            transfers: 0,
+          });
+
+          await new Promise((resolve) => setTimeout(resolve, 1800));
+
+          let time = "約 2.5 小時";
+          let fare = 14000;
+          let transfers = 1;
+
+          if (origin.includes("東京") && destination.includes("大阪")) {
+            time = "約 2.5 小時";
+            fare = 14000;
+            transfers = 1;
+          } else if (
+            origin.includes("京都") &&
+            destination.includes("大阪")
+          ) {
+            time = "約 30 分鐘";
+            fare = 570;
+            transfers = 0;
+          } else if (
+            origin.includes("澀谷") &&
+            destination.includes("新宿")
+          ) {
+            time = "約 10 分鐘";
+            fare = 160;
+            transfers = 0;
+          }
+
+          Object.assign(railwayResults, {
+            time,
+            fare,
+            transfers,
+          });
+
+          isLoadingRailway.value = false;
+        };
+
+        const openTransitMap = () => {
+          const origin = encodeURIComponent(
+            railwayOrigin.value.trim() + " Japan"
+          );
+          const destination = encodeURIComponent(
+            railwayDestination.value.trim() + " Japan"
+          );
+          const mapUrl = `https://www.google.com/maps/dir/${origin}/${destination}/data=!4m2!4m1!3e3`;
+          window.open(mapUrl, "_blank");
+        };
+
+        // ----- 天氣 -----
+        const weatherQuery = ref("東京");
+        const isLoadingWeather = ref(false);
+        const weatherResult = reactive({
+          city: "",
+          date: "",
+          temperature: "",
+          description: "",
+          humidity: "",
+          windSpeed: "",
+          maxTemp: "",
+          minTemp: "",
+          iconClass: "fas fa-question-circle",
+        });
+
+        const getWeather = async () => {
+          const query = weatherQuery.value.trim();
+          if (!query) return;
+
+          isLoadingWeather.value = true;
+          Object.assign(weatherResult, {
+            city: "",
+            date: "",
+            temperature: "",
+            description: "",
+            humidity: "",
+            windSpeed: "",
+            maxTemp: "",
+            minTemp: "",
+            iconClass: "fas fa-question-circle",
+          });
+
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+
+          const mockData = {
+            東京: {
+              temp: 18,
+              desc: "晴朗無雲",
+              icon: "fas fa-sun",
+              hum: 60,
+              wind: 15,
+              max: 22,
+              min: 14,
+            },
+            大阪: {
+              temp: 24,
+              desc: "多雲時晴",
+              icon: "fas fa-cloud-sun",
+              hum: 75,
+              wind: 10,
+              max: 26,
+              min: 20,
+            },
+            京都: {
+              temp: 15,
+              desc: "陣雨",
+              icon: "fas fa-cloud-showers-heavy",
+              hum: 85,
+              wind: 8,
+              max: 17,
+              min: 12,
+            },
+            札幌: {
+              temp: 5,
+              desc: "小雪",
+              icon: "fas fa-snowflake",
+              hum: 70,
+              wind: 20,
+              max: 7,
+              min: 2,
+            },
+          };
+
+          const data = mockData[query] || mockData["東京"];
+
+          Object.assign(weatherResult, {
+            city: query,
+            date: new Date().toLocaleDateString("zh-TW", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            }),
+            temperature: data.temp,
+            description: data.desc,
+            humidity: data.hum,
+            windSpeed: data.wind,
+            maxTemp: data.max,
+            minTemp: data.min,
+            iconClass: data.icon,
+          });
+
+          isLoadingWeather.value = false;
+        };
+
+        // 預設載入一次天氣
+        getWeather();
+
+        // ----- 地圖 -----
+        const mapQuery = ref("澀谷交叉路口");
+        const mapPresets = [
+          "澀谷交叉路口",
+          "東京車站",
+          "道頓堀",
+          "清水寺",
+        ];
+
+        const openMap = () => {
+          if (mapQuery.value.trim()) {
+            const query = encodeURIComponent(
+              mapQuery.value.trim() + " Japan"
+            );
+            const mapUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
+            window.open(mapUrl, "_blank");
+          }
+        };
+
+        return {
+          currentTab,
+          tabs,
+
+          dailySchedule,
+          newActivity,
+          sortedSchedule,
+          addActivity,
+          deleteActivity,
+          toggleEdit,
+
+          people,
+          newPersonName,
+          expenses,
+          newExpense,
+          addPerson,
+          removePerson,
+          addExpense,
+          settlements,
+          totalExpense,
+          averageExpensePerPerson,
+
+          railwayOrigin,
+          railwayDestination,
+          isLoadingRailway,
+          railwayResults,
+          searchRailway,
+          openTransitMap,
+
+          weatherQuery,
+          isLoadingWeather,
+          weatherResult,
+          getWeather,
+
+          mapQuery,
+          mapPresets,
+          openMap,
+        };
+      },
+    }).mount("#app");
+  </script>
 </body>
 </html>
