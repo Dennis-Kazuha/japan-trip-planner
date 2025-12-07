@@ -552,7 +552,7 @@
                 <i class="fas fa-yen-sign text-xl app-text-primary mb-1"></i>
                 <p class="text-xs text-gray-500">票價 (預估)</p>
                 <p class="font-bold text-secondary">
-                  {{ railwayResults.fare.toLocaleString() }} JPY
+                  {{ railwayResults.fare !== null ? railwayResults.fare.toLocaleString() + ' JPY' : '—' }}
                 </p>
               </div>
               <div class="p-2 bg-background rounded-lg shadow-inner">
@@ -1070,51 +1070,43 @@
         });
 
         const searchRailway = async () => {
-          const origin = railwayOrigin.value.trim();
-          const destination = railwayDestination.value.trim();
-          if (!origin || !destination) return;
+  const origin = railwayOrigin.value.trim();
+  const destination = railwayDestination.value.trim();
+  if (!origin || !destination) return;
 
-          isLoadingRailway.value = true;
-          Object.assign(railwayResults, {
-            time: "",
-            fare: 0,
-            transfers: 0,
-          });
+  isLoadingRailway.value = true;
+  Object.assign(railwayResults, { time: '', fare: 0, transfers: 0 });
 
-          await new Promise((resolve) => setTimeout(resolve, 1800));
+  try {
+    const url =
+      'https://kazuha.zeabur.app/webhook/FEARLESS - Railway API' +
+      `?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`;
 
-          let time = "約 2.5 小時";
-          let fare = 14000;
-          let transfers = 1;
+    const res = await fetch(url);
 
-          if (origin.includes("東京") && destination.includes("大阪")) {
-            time = "約 2.5 小時";
-            fare = 14000;
-            transfers = 1;
-          } else if (
-            origin.includes("京都") &&
-            destination.includes("大阪")
-          ) {
-            time = "約 30 分鐘";
-            fare = 570;
-            transfers = 0;
-          } else if (
-            origin.includes("澀谷") &&
-            destination.includes("新宿")
-          ) {
-            time = "約 10 分鐘";
-            fare = 160;
-            transfers = 0;
-          }
+    if (!res.ok) {
+      throw new Error('HTTP ' + res.status);
+    }
 
-          Object.assign(railwayResults, {
-            time,
-            fare,
-            transfers,
-          });
+    const data = await res.json();
 
-          isLoadingRailway.value = false;
-        };
+    if (!data.ok) {
+      // 例如 ZERO_RESULTS 的情況會走到這裡
+      alert(data.message || '查不到路線資訊，請改用 Google Maps 查看詳細路線與時間');
+      return;
+    }
+
+    railwayResults.time = data.time || '—';
+    railwayResults.fare = data.fare ?? null;
+    railwayResults.transfers = data.transfers ?? 0;
+  } catch (error) {
+    console.error(error);
+    alert('路線查詢服務暫時有點狀況，等等再試試看喔～');
+  } finally {
+    isLoadingRailway.value = false;
+  }
+};
+
 
         const openTransitMap = () => {
           const origin = encodeURIComponent(
