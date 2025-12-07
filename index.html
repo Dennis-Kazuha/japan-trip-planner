@@ -1127,102 +1127,84 @@
           window.open(mapUrl, "_blank");
         };
 
-        // ----- 天氣 -----
-        const weatherQuery = ref("東京");
-        const isLoadingWeather = ref(false);
-        const weatherResult = reactive({
-          city: "",
-          date: "",
-          temperature: "",
-          description: "",
-          humidity: "",
-          windSpeed: "",
-          maxTemp: "",
-          minTemp: "",
-          iconClass: "fas fa-question-circle",
-        });
+        // --- 天氣功能邏輯 (Weather Logic) ---
+const weatherQuery = ref('東京');
+const isLoadingWeather = ref(false);
+const weatherResult = reactive({
+  city: '',
+  date: '',
+  temperature: '',
+  description: '',
+  humidity: '',
+  windSpeed: '',
+  maxTemp: '',
+  minTemp: '',
+  iconClass: 'fas fa-question-circle'
+});
 
-        const getWeather = async () => {
-          const query = weatherQuery.value.trim();
-          if (!query) return;
+// ⚠️ 記得把舊的 mockData 和 setTimeout 那段整個刪掉，只留這個新版函式
+const getWeather = async () => {
+  const query = weatherQuery.value.trim();
+  if (!query) return;
 
-          isLoadingWeather.value = true;
-          Object.assign(weatherResult, {
-            city: "",
-            date: "",
-            temperature: "",
-            description: "",
-            humidity: "",
-            windSpeed: "",
-            maxTemp: "",
-            minTemp: "",
-            iconClass: "fas fa-question-circle",
-          });
+  isLoadingWeather.value = true;
 
-          await new Promise((resolve) => setTimeout(resolve, 1500));
+  // 先清空畫面
+  Object.assign(weatherResult, {
+    city: '',
+    date: '',
+    temperature: '',
+    description: '',
+    humidity: '',
+    windSpeed: '',
+    maxTemp: '',
+    minTemp: '',
+    iconClass: 'fas fa-question-circle'
+  });
 
-          const mockData = {
-            東京: {
-              temp: 18,
-              desc: "晴朗無雲",
-              icon: "fas fa-sun",
-              hum: 60,
-              wind: 15,
-              max: 22,
-              min: 14,
-            },
-            大阪: {
-              temp: 24,
-              desc: "多雲時晴",
-              icon: "fas fa-cloud-sun",
-              hum: 75,
-              wind: 10,
-              max: 26,
-              min: 20,
-            },
-            京都: {
-              temp: 15,
-              desc: "陣雨",
-              icon: "fas fa-cloud-showers-heavy",
-              hum: 85,
-              wind: 8,
-              max: 17,
-              min: 12,
-            },
-            札幌: {
-              temp: 5,
-              desc: "小雪",
-              icon: "fas fa-snowflake",
-              hum: 70,
-              wind: 20,
-              max: 7,
-              min: 2,
-            },
-          };
+  try {
+    // 換成你的 n8n「Production URL」
+    const res = await fetch(
+      `https://kazuha.zeabur.app/webhook/fearless-weather?city=${encodeURIComponent(query)}`
+    );
 
-          const data = mockData[query] || mockData["東京"];
+    if (!res.ok) {
+      throw new Error('HTTP ' + res.status);
+    }
 
-          Object.assign(weatherResult, {
-            city: query,
-            date: new Date().toLocaleDateString("zh-TW", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-            }),
-            temperature: data.temp,
-            description: data.desc,
-            humidity: data.hum,
-            windSpeed: data.wind,
-            maxTemp: data.max,
-            minTemp: data.min,
-            iconClass: data.icon,
-          });
+    const data = await res.json();
 
-          isLoadingWeather.value = false;
-        };
+    if (!data.ok) {
+      alert(data.message || '查不到天氣資料，請稍後再試一次');
+      return;
+    }
 
-        // 預設載入一次天氣
-        getWeather();
+    Object.assign(weatherResult, {
+      city: data.city || query,
+      date: new Date().toLocaleDateString('zh-TW', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      }),
+      temperature: data.temperature,
+      description: data.description,
+      humidity: data.humidity,
+      windSpeed: data.windSpeed,
+      maxTemp: data.maxTemp,
+      minTemp: data.minTemp,
+      iconClass: data.iconClass || 'fas fa-question-circle'
+    });
+  } catch (error) {
+    console.error(error);
+    alert('天氣服務暫時有點問題，等等再試試看唷～');
+  } finally {
+    isLoadingWeather.value = false;
+  }
+};
+
+// 預設進來就幫你查一次東京
+getWeather();
+
 
         // ----- 地圖 -----
         const mapQuery = ref("澀谷交叉路口");
