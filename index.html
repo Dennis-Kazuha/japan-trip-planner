@@ -475,7 +475,7 @@
         </div>
       </section>
 
-      <!-- 3. 鐵路系統 -->
+      <!-- 3. 鐵路系統（改成直接開 Google Maps） -->
       <section v-else-if="currentTab === 'railway'" class="space-y-6">
         <h2 class="text-2xl font-bold app-text-primary border-b pb-2">
           🚄 日本鐵路/交通查詢
@@ -485,7 +485,7 @@
           class="bg-white p-4 shadow-xl rounded-2xl border border-primary/10 space-y-3"
         >
           <p class="font-medium text-gray-700 text-sm">
-            查詢轉乘時間與預估票價：
+            輸入起點與終點，我們會幫你在 Google Maps 開啟大眾運輸路線：
           </p>
           <input
             v-model="railwayOrigin"
@@ -509,11 +509,11 @@
               class="fas fa-search-location mr-2"
             ></i>
             <i v-else class="fas fa-spinner animate-spin mr-2"></i>
-            查詢路線
+            查詢路線並開啟 Google Maps
           </button>
         </div>
 
-        <!-- 鐵路結果 -->
+        <!-- 鐵路結果（提示區） -->
         <div
           v-if="railwayResults.time || isLoadingRailway"
           class="mt-2 bg-white p-6 rounded-2xl shadow-xl border border-primary/10"
@@ -523,7 +523,7 @@
             class="text-center p-8 text-primary font-medium space-y-2"
           >
             <i class="fas fa-train fa-beat-fade text-3xl mb-1"></i>
-            <p>正在查詢最佳轉乘方案中...</p>
+            <p>正在準備為你開啟路線...</p>
             <p class="text-xs text-gray-500">
               依照網路狀況，大約需要幾秒鐘。
             </p>
@@ -545,12 +545,12 @@
                 <i class="fas fa-clock text-xl app-text-primary mb-1"></i>
                 <p class="text-xs text-gray-500">總時間</p>
                 <p class="font-bold text-secondary">
-                  {{ railwayResults.time }}
+                  {{ railwayResults.time || '—' }}
                 </p>
               </div>
               <div class="p-2 bg-background rounded-lg shadow-inner">
                 <i class="fas fa-yen-sign text-xl app-text-primary mb-1"></i>
-                <p class="text-xs text-gray-500">票價 (預估)</p>
+                <p class="text-xs text-gray-500">票價 (以 Maps 為準)</p>
                 <p class="font-bold text-secondary">
                   {{ railwayResults.fare !== null ? railwayResults.fare.toLocaleString() + ' JPY' : '—' }}
                 </p>
@@ -561,7 +561,7 @@
                 ></i>
                 <p class="text-xs text-gray-500">轉乘次數</p>
                 <p class="font-bold text-secondary">
-                  {{ railwayResults.transfers }}
+                  {{ railwayResults.transfers !== null ? railwayResults.transfers : '—' }}
                 </p>
               </div>
             </div>
@@ -570,9 +570,9 @@
               class="text-xs text-gray-600 mt-4 italic border-t pt-2 flex items-start gap-1"
             >
               <i class="fas fa-lightbulb app-text-primary mt-0.5"></i>
-              <span
-                >提示：此為模擬預估值，實際班次與票價請以官方即時資訊為主。</span
-              >
+              <span>
+                提示：實際班次、總時間與票價以 Google Maps 即時資訊為主，點擊下方按鈕會直接開啟對應路線。
+              </span>
             </p>
             <button
               @click="openTransitMap"
@@ -922,6 +922,8 @@
           participants: [],
         });
 
+        const newPersonName = ref("");
+
         const addPerson = () => {
           const name = newPersonName.value.trim();
           if (name && !people.value.includes(name)) {
@@ -929,8 +931,6 @@
             newPersonName.value = "";
           }
         };
-
-        const newPersonName = ref("");
 
         const removePerson = (name) => {
           people.value = people.value.filter((p) => p !== name);
@@ -1059,159 +1059,136 @@
           { deep: true }
         );
 
-        // ----- 鐵路 -----
+        // ----- 鐵路（前端直接開 Google Maps） -----
         const railwayOrigin = ref("東京站");
         const railwayDestination = ref("新大阪站");
         const isLoadingRailway = ref(false);
         const railwayResults = reactive({
           time: "",
-          fare: 0,
-          transfers: 0,
+          fare: null,
+          transfers: null,
         });
 
-        const searchRailway = async () => {
-  const origin = railwayOrigin.value.trim();
-  const destination = railwayDestination.value.trim();
-  if (!origin || !destination) return;
-
-  isLoadingRailway.value = true;
-  Object.assign(railwayResults, { time: '', fare: 0, transfers: 0 });
-
-  try {
-    const url =
-      'https://kazuha.zeabur.app/webhook/FEARLESS - Railway API' +
-      `?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`;
-
-    const res = await fetch(url);
-
-    if (!res.ok) {
-      throw new Error('HTTP ' + res.status);
-    }
-
-    const data = await res.json();
-
-    if (!data.ok) {
-      // 例如 ZERO_RESULTS 的情況會走到這裡
-      alert(data.message || '查不到路線資訊，請改用 Google Maps 查看詳細路線與時間');
-      return;
-    }
-
-    railwayResults.time = data.time || '—';
-    railwayResults.fare = data.fare ?? null;
-    railwayResults.transfers = data.transfers ?? 0;
-  } catch (error) {
-    console.error(error);
-    alert('路線查詢服務暫時有點狀況，等等再試試看喔～');
-  } finally {
-    isLoadingRailway.value = false;
-  }
-};
-
-
         const openTransitMap = () => {
-          const origin = encodeURIComponent(
-            railwayOrigin.value.trim() + " Japan"
-          );
-          const destination = encodeURIComponent(
-            railwayDestination.value.trim() + " Japan"
-          );
-          const mapUrl = `https://www.google.com/maps/dir/${origin}/${destination}/data=!4m2!4m1!3e3`;
+          const originText = railwayOrigin.value.trim();
+          const destinationText = railwayDestination.value.trim();
+          if (!originText || !destinationText) return;
+
+          const origin = encodeURIComponent(originText + " Japan");
+          const destination = encodeURIComponent(destinationText + " Japan");
+
+          const mapUrl =
+            `https://www.google.com/maps/dir/?api=1` +
+            `&origin=${origin}` +
+            `&destination=${destination}` +
+            `&travelmode=transit`;
+
           window.open(mapUrl, "_blank");
         };
 
+        const searchRailway = () => {
+          const originText = railwayOrigin.value.trim();
+          const destinationText = railwayDestination.value.trim();
+          if (!originText || !destinationText) return;
+
+          isLoadingRailway.value = true;
+
+          Object.assign(railwayResults, {
+            time: "請在 Google Maps 查看",
+            fare: null,
+            transfers: null,
+          });
+
+          openTransitMap();
+
+          isLoadingRailway.value = false;
+        };
+
         // --- 天氣功能邏輯 (Weather Logic) ---
-const weatherQuery = ref('東京');
-const isLoadingWeather = ref(false);
-const weatherResult = reactive({
-  city: '',
-  date: '',
-  temperature: '',
-  description: '',
-  humidity: '',
-  windSpeed: '',
-  maxTemp: '',
-  minTemp: '',
-  iconClass: 'fas fa-question-circle'
-});
+        const weatherQuery = ref("東京");
+        const isLoadingWeather = ref(false);
+        const weatherResult = reactive({
+          city: "",
+          date: "",
+          temperature: "",
+          description: "",
+          humidity: "",
+          windSpeed: "",
+          maxTemp: "",
+          minTemp: "",
+          iconClass: "fas fa-question-circle",
+        });
 
-// ⚠️ 記得把舊的 mockData 和 setTimeout 那段整個刪掉，只留這個新版函式
-const getWeather = async () => {
-  const query = weatherQuery.value.trim();
-  if (!query) return;
+        // 透過 n8n Webhook 查 OpenWeather
+        const getWeather = async () => {
+          const query = weatherQuery.value.trim();
+          if (!query) return;
 
-  isLoadingWeather.value = true;
+          isLoadingWeather.value = true;
 
-  // 先清空畫面
-  Object.assign(weatherResult, {
-    city: '',
-    date: '',
-    temperature: '',
-    description: '',
-    humidity: '',
-    windSpeed: '',
-    maxTemp: '',
-    minTemp: '',
-    iconClass: 'fas fa-question-circle'
-  });
+          Object.assign(weatherResult, {
+            city: "",
+            date: "",
+            temperature: "",
+            description: "",
+            humidity: "",
+            windSpeed: "",
+            maxTemp: "",
+            minTemp: "",
+            iconClass: "fas fa-question-circle",
+          });
 
-  try {
-    // 換成你的 n8n「Production URL」
-    const res = await fetch(
-      `https://kazuha.zeabur.app/webhook/fearless-weather?city=${encodeURIComponent(query)}`
-    );
+          try {
+            const res = await fetch(
+              `https://kazuha.zeabur.app/webhook/fearless-weather?city=${encodeURIComponent(
+                query
+              )}`
+            );
 
-    if (!res.ok) {
-      throw new Error('HTTP ' + res.status);
-    }
+            if (!res.ok) {
+              throw new Error("HTTP " + res.status);
+            }
 
-    const data = await res.json();
+            const data = await res.json();
 
-    if (!data.ok) {
-      alert(data.message || '查不到天氣資料，請稍後再試一次');
-      return;
-    }
+            if (!data.ok) {
+              alert(data.message || "查不到天氣資料，請稍後再試一次");
+              return;
+            }
 
-    Object.assign(weatherResult, {
-      city: data.city || query,
-      date: new Date().toLocaleDateString('zh-TW', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      }),
-      temperature: data.temperature,
-      description: data.description,
-      humidity: data.humidity,
-      windSpeed: data.windSpeed,
-      maxTemp: data.maxTemp,
-      minTemp: data.minTemp,
-      iconClass: data.iconClass || 'fas fa-question-circle'
-    });
-  } catch (error) {
-    console.error(error);
-    alert('天氣服務暫時有點問題，等等再試試看唷～');
-  } finally {
-    isLoadingWeather.value = false;
-  }
-};
+            Object.assign(weatherResult, {
+              city: data.city || query,
+              date: new Date().toLocaleDateString("zh-TW", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              }),
+              temperature: data.temperature,
+              description: data.description,
+              humidity: data.humidity,
+              windSpeed: data.windSpeed,
+              maxTemp: data.maxTemp,
+              minTemp: data.minTemp,
+              iconClass: data.iconClass || "fas fa-question-circle",
+            });
+          } catch (error) {
+            console.error(error);
+            alert("天氣服務暫時有點問題，等等再試試看唷～");
+          } finally {
+            isLoadingWeather.value = false;
+          }
+        };
 
-// 預設進來就幫你查一次東京
-getWeather();
-
+        // 預設查一次東京
+        getWeather();
 
         // ----- 地圖 -----
         const mapQuery = ref("澀谷交叉路口");
-        const mapPresets = [
-          "澀谷交叉路口",
-          "東京車站",
-          "道頓堀",
-          "清水寺",
-        ];
+        const mapPresets = ["澀谷交叉路口", "東京車站", "道頓堀", "清水寺"];
 
         const openMap = () => {
           if (mapQuery.value.trim()) {
-            const query = encodeURIComponent(
-              mapQuery.value.trim() + " Japan"
-            );
+            const query = encodeURIComponent(mapQuery.value.trim() + " Japan");
             const mapUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
             window.open(mapUrl, "_blank");
           }
